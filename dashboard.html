@@ -89,9 +89,7 @@ input[type="checkbox"] { accent-color: #00ffcc; }
   <div class="flex items-center gap-8">
     <span class="text-xl font-black text-[#ff2d78] drop-shadow-[0_0_8px_rgba(255,45,120,0.8)] font-headline tracking-tight">PETROSETCO DISTRIBUTION</span>
     <nav class="hidden md:flex items-center space-x-6 font-label uppercase text-[10px] tracking-[0.2em]">
-      <a class="text-[#ff2d78] border-b-2 border-[#ff2d78] pb-1" href="#">Dashboard</a>
-      <a class="text-slate-400 hover:text-[#00ffcc] transition-all duration-300" href="#">Dữ Liệu Gốc</a>
-      <a class="text-slate-400 hover:text-[#00ffcc] transition-all duration-300" href="#">Mô Hình AI</a>
+      <span class="text-[#ff2d78] border-b-2 border-[#ff2d78] pb-1">BẢNG ĐIỀU KHIỂN</span>
     </nav>
   </div>
   <div class="flex items-center gap-3">
@@ -101,8 +99,8 @@ input[type="checkbox"] { accent-color: #00ffcc; }
     </div>
   </div>
 </header>
-<div class="flex pt-16 h-[118vh] overflow-hidden">
-<aside id="sidebar" class="fixed left-0 top-16 h-full w-64 flex flex-col z-40 bg-[#0a0a12]/95 border-r border-[#00ffcc]/20 font-label uppercase tracking-wider text-xs">
+<div class="flex flex-col lg:flex-row pt-16 lg:h-[118vh] lg:overflow-hidden h-auto">
+<aside id="sidebar" class="relative lg:fixed lg:left-0 lg:top-16 lg:h-full w-full lg:w-64 flex flex-col z-40 bg-[#0a0a12]/95 border-b lg:border-b-0 lg:border-r border-[#00ffcc]/20 font-label uppercase tracking-wider text-xs">
   <div class="p-3 space-y-4 flex-1 overflow-y-auto">
     <!-- Chipset Filter -->
     <div class="space-y-3">
@@ -155,10 +153,10 @@ input[type="checkbox"] { accent-color: #00ffcc; }
   </div>
 </aside>
 
-<main class="ml-64 flex-1 h-[calc(118vh-64px)] p-3 overflow-hidden flex flex-col gap-3 bg-[radial-gradient(circle_at_50%_0%,rgba(255,45,120,0.05)_0%,rgba(10,10,18,0)_50%)]">
+<main class="lg:ml-64 flex-1 lg:h-[calc(118vh-64px)] p-3 overflow-y-auto lg:overflow-hidden flex flex-col gap-3 bg-[radial-gradient(circle_at_50%_0%,rgba(255,45,120,0.05)_0%,rgba(10,10,18,0)_50%)]">
 
 <!-- KPI Cards -->
-<div class="grid grid-cols-4 gap-3 shrink-0">
+<div class="grid grid-cols-2 xl:grid-cols-4 gap-3 shrink-0">
   <div class="bg-surface-container neon-border-pri p-3 relative overflow-hidden group">
     <div class="font-label text-[9px] text-slate-400 mb-1 uppercase tracking-widest">Tổng Sản Phẩm</div>
     <div class="flex items-end justify-between">
@@ -206,13 +204,13 @@ input[type="checkbox"] { accent-color: #00ffcc; }
 </div>
 
 <!-- ================= MIDDLE ROW ================= -->
-<div class="flex-1 flex gap-3 min-h-0 overflow-hidden">
+<div class="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 lg:overflow-hidden">
 
   <!-- Left Column (Chart + Table) -->
   <div class="flex-1 flex flex-col gap-3 min-w-0 min-h-0">
     
     <!-- CHART SECTION -->
-    <div class="bg-surface-container border border-outline-variant p-3 shrink-0 flex flex-col relative" style="height: 55%;">
+    <div class="bg-surface-container border border-outline-variant p-3 shrink-0 flex flex-col relative h-[300px] lg:h-[55%] lg:min-h-0">
       <div class="absolute inset-0 scanline opacity-10"></div>
       <div class="flex justify-between items-center mb-2 shrink-0 relative z-10">
         <h2 class="font-headline font-bold text-sm text-on-surface flex items-center gap-2">
@@ -225,7 +223,7 @@ input[type="checkbox"] { accent-color: #00ffcc; }
     </div>
 
     <!-- DATA TABLE SECTION -->
-    <div class="bg-surface-container border border-outline-variant p-3 flex flex-col flex-1 min-h-0 relative">
+    <div class="bg-surface-container border border-outline-variant p-3 flex flex-col flex-1 min-h-[400px] lg:min-h-0 relative">
       <div class="flex justify-between items-center mb-3 shrink-0">
         <h3 class="font-headline font-bold text-sm text-on-surface uppercase tracking-tight flex items-center gap-2">
           <span class="material-symbols-outlined text-secondary text-sm">table_chart</span> BẢNG CHI TIẾT
@@ -255,7 +253,7 @@ input[type="checkbox"] { accent-color: #00ffcc; }
   </div>
 
   <!-- Right Column (Trends + Features) -->
-  <div class="w-[20rem] flex flex-col gap-3 shrink-0 min-h-0">
+  <div class="w-full lg:w-[20rem] flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0 lg:min-h-0">
     
     <!-- Trend Summary -->
     <div class="bg-surface-container border border-outline-variant p-3 shrink-0 flex flex-col">
@@ -281,7 +279,7 @@ input[type="checkbox"] { accent-color: #00ffcc; }
     </div>
 
     <!-- Feature Importance -->
-    <div class="bg-surface-container border border-outline-variant p-3 flex flex-col flex-1 min-h-0">
+    <div class="bg-surface-container border border-outline-variant p-3 flex flex-col flex-1 min-h-[250px] lg:min-h-0">
       <h3 class="font-headline font-bold text-xs text-on-surface mb-3 uppercase tracking-tight shrink-0">Trọng Số AI (SHAP)</h3>
       <div class="flex-1 space-y-4 overflow-y-auto custom-scrollbar pr-2">
         <div class="space-y-1">
@@ -580,8 +578,29 @@ function updateChart() {
     };
   });
 
-  // Use longest label set
-  const allLabels = datasets.length > 0 ? datasets.reduce((a, d) => d._labels.length > a.length ? d._labels : a, []) : [];
+  // Align X-axis across all datasets (Fix Tooltip Mismatch)
+  const allLabels = [...new Set(datasets.flatMap(d => d._labels))].sort((a, b) => a.localeCompare(b));
+  
+  datasets.forEach(d => {
+    // 1. Fill gaps with null so Chart.js correctly aligns indices with allLabels
+    const originalData = d.data;
+    d.data = allLabels.map(lbl => {
+      const idx = d._labels.indexOf(lbl);
+      return idx !== -1 ? originalData[idx] : null;
+    });
+    d.spanGaps = true; // Connect lines through missing data gaps
+
+    // 2. Nổi bật điểm Dự Báo (Forecast Point)
+    d.pointRadius = allLabels.map(lbl => lbl === '2026-01-05' ? 6 : 2);
+    d.pointHoverRadius = allLabels.map(lbl => lbl === '2026-01-05' ? 8 : 6);
+    d.pointBackgroundColor = allLabels.map(lbl => lbl === '2026-01-05' ? '#fff' : d.borderColor);
+    d.pointBorderWidth = allLabels.map(lbl => lbl === '2026-01-05' ? 3 : 2);
+
+    // 3. Đường nét đứt (Dashed line) cho đoạn nối tới dự báo
+    d.segment = {
+      borderDash: ctx => ctx.p1DataIndex === allLabels.indexOf('2026-01-05') ? [6, 4] : undefined
+    };
+  });
 
   if (priceChart) priceChart.destroy();
   const ctx = document.getElementById('priceChart').getContext('2d');
