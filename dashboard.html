@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Petrosetco Distribution | VGA Price Forecast Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "background": "#0a0a12",
+        "tertiary": "#ffe04a",
+        "secondary": "#00ffcc",
+        "outline": "#5a5068",
+        "outline-variant": "#302840",
+        "on-background": "#e8e0f0",
+        "surface-variant": "#1e1e30",
+        "primary": "#ff2d78",
+        "on-surface": "#e8e0f0",
+        "surface": "#0f0f1a",
+        "surface-container": "#141422",
+        "surface-container-high": "#1e1e30",
+        "surface-container-highest": "#28283e",
+        "surface-container-low": "#111118",
+        "surface-bright": "#1a1a2e",
+        "error": "#ff4444",
+      },
+      fontFamily: {
+        "headline": ["Sora"],
+        "body": ["Inter"],
+        "label": ["Space Grotesk"]
+      },
+      borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+    },
+  },
+}
+</script>
+<style>
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+.neon-glow-text { text-shadow: 0 0 8px currentColor; }
+.neon-border-pri { border: 1px solid rgba(255,45,120,0.3); box-shadow: inset 0 0 12px rgba(255,45,120,0.05); }
+.neon-border-sec { border: 1px solid rgba(0,255,204,0.3); box-shadow: inset 0 0 12px rgba(0,255,204,0.05); }
+.scanline {
+  background: linear-gradient(to bottom, rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06));
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+/* Tooltip */
+.tt-wrap { position: relative; }
+.tt-box {
+  display: none; position: absolute; z-index: 100; bottom: 100%; left: 50%; transform: translateX(-50%);
+  background: #141422; border: 1px solid rgba(0,255,204,0.4); padding: 12px 16px; min-width: 280px;
+  box-shadow: 0 0 20px rgba(0,255,204,0.15); pointer-events: none; margin-bottom: 8px;
+}
+.tt-wrap:hover .tt-box { display: block; }
+.tt-box::after {
+  content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+  border:6px solid transparent; border-top-color: rgba(0,255,204,0.4);
+}
+/* Sort arrows */
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: #00ffcc; }
+th.sortable::after { content: ' ⇅'; opacity: 0.4; font-size: 10px; }
+th.sortable.asc::after { content: ' ▲'; opacity: 1; color: #00ffcc; }
+th.sortable.desc::after { content: ' ▼'; opacity: 1; color: #ff2d78; }
+/* VRAM button active */
+.vram-btn.active { border-color: #00ffcc !important; color: #00ffcc !important; background: rgba(0,255,204,0.05) !important; box-shadow: 0 0 10px rgba(0,255,204,0.1); }
+/* Checkbox custom */
+input[type="checkbox"] { accent-color: #00ffcc; }
+/* Smooth transitions */
+.fade-row { transition: opacity 0.3s ease, transform 0.3s ease; }
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0a12; }
+::-webkit-scrollbar-thumb { background: #302840; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #5a5068; }
+</style>
+</head>
+<body style="zoom: 0.85;" class="bg-background text-on-background font-body selection:bg-primary selection:text-white">
+
+<!-- ========== HEADER ========== -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#0a0a12] border-b border-[#ff2d78]/30 shadow-[0_0_15px_rgba(255,45,120,0.1)]">
+  <div class="flex items-center gap-8">
+    <span class="text-xl font-black text-[#ff2d78] drop-shadow-[0_0_8px_rgba(255,45,120,0.8)] font-headline tracking-tight">PETROSETCO DISTRIBUTION</span>
+    <nav class="hidden md:flex items-center space-x-6 font-label uppercase text-[10px] tracking-[0.2em]">
+      <a class="text-[#ff2d78] border-b-2 border-[#ff2d78] pb-1" href="#">Dashboard</a>
+      <a class="text-slate-400 hover:text-[#00ffcc] transition-all duration-300" href="#">Dữ Liệu Gốc</a>
+      <a class="text-slate-400 hover:text-[#00ffcc] transition-all duration-300" href="#">Mô Hình AI</a>
+    </nav>
+  </div>
+  <div class="flex items-center gap-3">
+    <div class="hidden sm:flex items-center gap-2 text-xs font-label text-slate-400">
+      <span class="material-symbols-outlined text-secondary text-sm">verified</span>
+      <span>ZOTAC VGA FORECAST v2.0</span>
+    </div>
+  </div>
+</header>
+<div class="flex pt-16 h-[118vh] overflow-hidden">
+<aside id="sidebar" class="fixed left-0 top-16 h-full w-64 flex flex-col z-40 bg-[#0a0a12]/95 border-r border-[#00ffcc]/20 font-label uppercase tracking-wider text-xs">
+  <div class="p-3 space-y-4 flex-1 overflow-y-auto">
+    <!-- Chipset Filter -->
+    <div class="space-y-3">
+      <label class="text-[#00ffcc] font-bold text-[10px] flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">memory</span> CHIPSET_SELECT
+      </label>
+      <div id="chipset-filters" class="space-y-2"></div>
+    </div>
+    <!-- VRAM Filter -->
+    <div class="space-y-3">
+      <label class="text-[#00ffcc] font-bold text-[10px] flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">database</span> VRAM_CAPACITY
+      </label>
+      <div id="vram-filters" class="grid grid-cols-2 gap-2"></div>
+    </div>
+    <!-- Trend Filter -->
+    <div class="space-y-3">
+      <label class="text-[#00ffcc] font-bold text-[10px] flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">trending_up</span> XU_HƯỚNG
+      </label>
+      <select id="trend-filter" class="w-full bg-surface-container border border-outline-variant text-slate-300 text-[10px] p-2 focus:ring-1 focus:ring-secondary outline-none" onchange="applyFilters()">
+        <option value="all">TẤT CẢ</option>
+        <option value="Tăng">📈 TĂNG GIÁ</option>
+        <option value="Giảm">📉 GIẢM GIÁ</option>
+        <option value="Ổn định">➡️ ỔN ĐỊNH</option>
+      </select>
+    </div>
+    <!-- Price Range -->
+    <div class="space-y-3">
+      <label class="text-[#00ffcc] font-bold text-[10px] flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">payments</span> KHOẢNG GIÁ
+      </label>
+      <div class="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
+        <span>TỪ: <span id="lbl-min" class="text-secondary font-mono text-xs">0</span> Tr</span>
+        <span>ĐẾN: <span id="lbl-max" class="text-primary font-mono text-xs">50</span> Tr</span>
+      </div>
+      <div class="space-y-2">
+        <input id="price-min" type="range" min="0" max="50" step="1" value="0" class="w-full h-1 bg-surface-container appearance-none outline-none accent-secondary" oninput="updatePriceLabels(); applyFilters()">
+        <input id="price-max" type="range" min="0" max="50" step="1" value="50" class="w-full h-1 bg-surface-container appearance-none outline-none accent-primary" oninput="updatePriceLabels(); applyFilters()">
+      </div>
+    </div>
+  </div>
+  <div class="p-3 border-t border-[#00ffcc]/20 space-y-3">
+    <button onclick="resetFilters()" class="w-full py-3 bg-[#00ffcc]/10 border border-[#00ffcc] text-[#00ffcc] font-bold shadow-[0_0_15px_rgba(0,255,204,0.2)] hover:bg-[#00ffcc] hover:text-[#0a0a12] transition-all duration-300">
+      RESET BỘ LỌC
+    </button>
+    <div class="text-[8px] text-slate-600 text-center">
+      DỮ LIỆU: 2024-2025 | MODEL: LightGBM | MAPE: 19.6%
+    </div>
+  </div>
+</aside>
+
+<main class="ml-64 flex-1 h-[calc(118vh-64px)] p-3 overflow-hidden flex flex-col gap-3 bg-[radial-gradient(circle_at_50%_0%,rgba(255,45,120,0.05)_0%,rgba(10,10,18,0)_50%)]">
+
+<!-- KPI Cards -->
+<div class="grid grid-cols-4 gap-3 shrink-0">
+  <div class="bg-surface-container neon-border-pri p-3 relative overflow-hidden group">
+    <div class="font-label text-[9px] text-slate-400 mb-1 uppercase tracking-widest">Tổng Sản Phẩm</div>
+    <div class="flex items-end justify-between">
+      <div>
+        <div id="kpi-total" class="text-xl font-black font-headline text-on-surface">16</div>
+        <div class="text-secondary text-[9px] font-bold mt-1"><span id="kpi-total-sub">Chipset x VRAM</span></div>
+      </div>
+      <span class="material-symbols-outlined text-2xl text-primary/20">grid_view</span>
+    </div>
+  </div>
+  <div class="bg-surface-container neon-border-sec p-3 relative overflow-hidden group">
+    <div class="font-label text-[9px] text-slate-400 mb-1 uppercase tracking-widest">Giá Dự Báo TB</div>
+    <div class="flex items-end justify-between">
+      <div>
+        <div id="kpi-avg-price" class="text-xl font-black font-headline text-on-surface">0đ</div>
+        <div id="kpi-avg-sub" class="text-secondary text-[9px] font-bold mt-1">Tuần 05/01/2026</div>
+      </div>
+      <span class="material-symbols-outlined text-2xl text-secondary/20">monetization_on</span>
+    </div>
+  </div>
+  <div class="bg-surface-container neon-border-pri p-3 relative overflow-hidden group">
+    <div class="font-label text-[9px] text-slate-400 mb-1 uppercase tracking-widest">Xu Hướng</div>
+    <div class="flex items-end justify-between">
+      <div>
+        <div class="flex items-center gap-2">
+          <span id="kpi-up" class="text-xl font-black font-headline text-secondary neon-glow-text">0</span>
+          <span class="text-slate-600">/</span>
+          <span id="kpi-down" class="text-xl font-black font-headline text-primary neon-glow-text">0</span>
+        </div>
+        <div class="text-slate-500 text-[9px] font-bold mt-1">📈 Tăng / 📉 Giảm</div>
+      </div>
+      <span class="material-symbols-outlined text-2xl text-tertiary/20">swap_vert</span>
+    </div>
+  </div>
+  <div class="bg-surface-container neon-border-sec p-3 relative overflow-hidden group">
+    <div class="font-label text-[9px] text-slate-400 mb-1 uppercase tracking-widest">Chính Xác</div>
+    <div class="flex items-end justify-between">
+      <div>
+        <div class="text-xl font-black font-headline text-on-surface">80.4%</div>
+        <div class="text-secondary text-[9px] font-bold mt-1">MAPE=19.6% | GB Trees</div>
+      </div>
+      <span class="material-symbols-outlined text-2xl text-secondary/20">verified</span>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MIDDLE ROW ================= -->
+<div class="flex-1 flex gap-3 min-h-0 overflow-hidden">
+
+  <!-- Left Column (Chart + Table) -->
+  <div class="flex-1 flex flex-col gap-3 min-w-0 min-h-0">
+    
+    <!-- CHART SECTION -->
+    <div class="bg-surface-container border border-outline-variant p-3 shrink-0 flex flex-col relative" style="height: 55%;">
+      <div class="absolute inset-0 scanline opacity-10"></div>
+      <div class="flex justify-between items-center mb-2 shrink-0 relative z-10">
+        <h2 class="font-headline font-bold text-sm text-on-surface flex items-center gap-2">
+          BIỂU ĐỒ GIÁ BÁN <span class="bg-primary/20 text-primary text-[9px] px-2 py-0.5">LỊCH SỬ + DỰ BÁO</span>
+        </h2>
+      </div>
+      <div class="flex-1 relative z-10 min-h-0">
+        <canvas id="priceChart"></canvas>
+      </div>
+    </div>
+
+    <!-- DATA TABLE SECTION -->
+    <div class="bg-surface-container border border-outline-variant p-3 flex flex-col flex-1 min-h-0 relative">
+      <div class="flex justify-between items-center mb-3 shrink-0">
+        <h3 class="font-headline font-bold text-sm text-on-surface uppercase tracking-tight flex items-center gap-2">
+          <span class="material-symbols-outlined text-secondary text-sm">table_chart</span> BẢNG CHI TIẾT
+        </h3>
+        <span id="table-count" class="text-[10px] font-label text-slate-500"></span>
+      </div>
+      <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        <table class="w-full text-left font-label text-[10px]" id="forecast-table">
+          <thead class="sticky top-0 bg-surface-container z-20">
+            <tr class="text-slate-500 border-b border-outline-variant shadow-[0_4px_6px_-2px_rgba(0,0,0,0.5)]">
+              <th class="py-2 px-1">#</th>
+              <th class="py-2 px-1 sortable" data-col="Chipset" onclick="sortTable('Chipset')">CHIPSET</th>
+              <th class="py-2 px-1 sortable" data-col="VRAM" onclick="sortTable('VRAM')">VRAM</th>
+              <th class="py-2 px-1">GẦN NHẤT</th>
+              <th class="py-2 px-1 sortable text-right" data-col="Gia_Hien_Tai" onclick="sortTable('Gia_Hien_Tai')">GIÁ CŨ</th>
+              <th class="py-2 px-1 text-right">DỰ BÁO</th>
+              <th class="py-2 px-1 sortable text-right text-secondary" data-col="Gia_Du_Bao" onclick="sortTable('Gia_Du_Bao')">GIÁ MỚI</th>
+              <th class="py-2 px-1 text-right">KHOẢNG DỰ BÁO</th>
+              <th class="py-2 px-1 sortable text-right" data-col="Thay_doi_pct" onclick="sortTable('Thay_doi_pct')">± %</th>
+              <th class="py-2 px-1 text-center">XU HƯỚNG</th>
+            </tr>
+          </thead>
+          <tbody id="table-body" class="text-slate-300 relative z-0"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column (Trends + Features) -->
+  <div class="w-[20rem] flex flex-col gap-3 shrink-0 min-h-0">
+    
+    <!-- Trend Summary -->
+    <div class="bg-surface-container border border-outline-variant p-3 shrink-0 flex flex-col">
+      <h3 class="font-headline font-bold text-sm text-on-surface mb-3 uppercase tracking-tight">Xu Hướng Thị Trường</h3>
+      <div class="grid grid-cols-3 gap-2 mb-3 shrink-0">
+        <div class="border border-secondary/30 p-2 text-center">
+          <div id="trend-up-count" class="text-lg font-black font-headline text-secondary neon-glow-text">0</div>
+          <div class="text-[9px] text-slate-500">TĂNG</div>
+        </div>
+        <div class="border border-primary/30 p-2 text-center">
+          <div id="trend-down-count" class="text-lg font-black font-headline text-primary neon-glow-text">0</div>
+          <div class="text-[9px] text-slate-500">GIẢM</div>
+        </div>
+        <div class="border border-outline-variant p-2 text-center">
+          <div id="trend-stable-count" class="text-lg font-black font-headline text-slate-400">0</div>
+          <div class="text-[9px] text-slate-500">ỔN ĐỊNH</div>
+        </div>
+      </div>
+      <div class="relative h-2 bg-surface-container-highest overflow-hidden flex mb-2 shrink-0" id="trend-bar"></div>
+      <div class="h-20 overflow-y-auto custom-scrollbar text-[9px] pr-1 space-y-1" id="trend-list-all">
+        <!-- Will be populated by JS -->
+      </div>
+    </div>
+
+    <!-- Feature Importance -->
+    <div class="bg-surface-container border border-outline-variant p-3 flex flex-col flex-1 min-h-0">
+      <h3 class="font-headline font-bold text-xs text-on-surface mb-3 uppercase tracking-tight shrink-0">Trọng Số AI (SHAP)</h3>
+      <div class="flex-1 space-y-4 overflow-y-auto custom-scrollbar pr-2">
+        <div class="space-y-1">
+          <div class="flex justify-between text-[9px] font-label"><span class="text-slate-400">Giá 2 tuần trước</span><span class="text-primary font-bold">95%</span></div>
+          <div class="h-1.5 w-full bg-surface-container-highest"><div class="h-full bg-primary shadow-[0_0_8px_#ff2d78]" style="width:95%"></div></div>
+        </div>
+        <div class="space-y-1">
+          <div class="flex justify-between text-[9px] font-label"><span class="text-slate-400">Giá 1 tuần trước</span><span class="text-primary font-bold">52%</span></div>
+          <div class="h-1.5 w-full bg-surface-container-highest"><div class="h-full bg-primary shadow-[0_0_8px_#ff2d78]" style="width:52%"></div></div>
+        </div>
+        <div class="space-y-1">
+          <div class="flex justify-between text-[9px] font-label"><span class="text-slate-400">Giá nhập khẩu</span><span class="text-primary font-bold">28%</span></div>
+          <div class="h-1.5 w-full bg-surface-container-highest"><div class="h-full bg-primary shadow-[0_0_8px_#ff2d78]" style="width:28%"></div></div>
+        </div>
+        <div class="space-y-1">
+          <div class="flex justify-between text-[9px] font-label"><span class="text-slate-400">Chipset / VRAM</span><span class="text-primary font-bold">12%</span></div>
+          <div class="h-1.5 w-full bg-surface-container-highest"><div class="h-full bg-primary shadow-[0_0_8px_#ff2d78]" style="width:12%"></div></div>
+        </div>
+      </div>
+      <div class="mt-2 text-[8px] text-slate-500 bg-surface-container-high p-2 shrink-0 border border-outline-variant">
+        Giá lịch sử quyết định thay đổi chủ đạo.
+      </div>
+    </div>
+    
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="text-center text-[8px] font-label text-primary/30 shrink-0 select-none uppercase tracking-widest pt-1">
+  PETROSETCO DISTRIBUTION // ZOTAC FORECAST V2.0 // TỰ ĐỘNG CẬP NHẬT
+</div>
+
+</main>
+
+</div>
+<script>
+// ===== EMBEDDED DATA =====
+const PREDICTIONS = [
+  {Brand:"ZOTAC",Chipset:"RTX 3050",VRAM:"6GB",Tuan_Gia_Hien_Tai:"29/12/2025",Gia_Hien_Tai:4350000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:4287074,Gia_Du_Bao_Min:3445950,Gia_Du_Bao_Max:5128198,Thay_doi_pct:-1.45,Xu_huong:"Ổn định"},
+  {Brand:"ZOTAC",Chipset:"RTX 3050",VRAM:"8GB",Tuan_Gia_Hien_Tai:"06/01/2025",Gia_Hien_Tai:4900000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:4969537,Gia_Du_Bao_Min:3994514,Gia_Du_Bao_Max:5944560,Thay_doi_pct:1.42,Xu_huong:"Ổn định"},
+  {Brand:"ZOTAC",Chipset:"RTX 3060",VRAM:"12GB",Tuan_Gia_Hien_Tai:"27/10/2025",Gia_Hien_Tai:7350000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:7197638,Gia_Du_Bao_Min:5785462,Gia_Du_Bao_Max:8609815,Thay_doi_pct:-2.07,Xu_huong:"Giảm"},
+  {Brand:"ZOTAC",Chipset:"RTX 4060",VRAM:"8GB",Tuan_Gia_Hien_Tai:"21/04/2025",Gia_Hien_Tai:7600000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:6679954,Gia_Du_Bao_Min:5369347,Gia_Du_Bao_Max:7990561,Thay_doi_pct:-12.11,Xu_huong:"Giảm"},
+  {Brand:"ZOTAC",Chipset:"RTX 4060 Ti",VRAM:"16GB",Tuan_Gia_Hien_Tai:"24/02/2025",Gia_Hien_Tai:11125000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:10783366,Gia_Du_Bao_Min:8667670,Gia_Du_Bao_Max:12899063,Thay_doi_pct:-3.07,Xu_huong:"Giảm"},
+  {Brand:"ZOTAC",Chipset:"RTX 4060 Ti",VRAM:"8GB",Tuan_Gia_Hien_Tai:"24/02/2025",Gia_Hien_Tai:9859650,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:9809034,Gia_Du_Bao_Min:7884501,Gia_Du_Bao_Max:11733566,Thay_doi_pct:-0.51,Xu_huong:"Ổn định"},
+  {Brand:"ZOTAC",Chipset:"RTX 4070",VRAM:"12GB",Tuan_Gia_Hien_Tai:"24/02/2025",Gia_Hien_Tai:15433333,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:15885590,Gia_Du_Bao_Min:12768837,Gia_Du_Bao_Max:19002342,Thay_doi_pct:2.93,Xu_huong:"Tăng"},
+  {Brand:"ZOTAC",Chipset:"RTX 4070",VRAM:"16GB",Tuan_Gia_Hien_Tai:"24/02/2025",Gia_Hien_Tai:21342320,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:20926411,Gia_Du_Bao_Min:16820649,Gia_Du_Bao_Max:25032173,Thay_doi_pct:-1.95,Xu_huong:"Ổn định"},
+  {Brand:"ZOTAC",Chipset:"RTX 5050",VRAM:"8GB",Tuan_Gia_Hien_Tai:"01/12/2025",Gia_Hien_Tai:7350000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:6780990,Gia_Du_Bao_Min:5450560,Gia_Du_Bao_Max:8111420,Thay_doi_pct:-7.74,Xu_huong:"Giảm"},
+  {Brand:"ZOTAC",Chipset:"RTX 5060",VRAM:"8GB",Tuan_Gia_Hien_Tai:"29/12/2025",Gia_Hien_Tai:8800000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:8682588,Gia_Du_Bao_Min:6979064,Gia_Du_Bao_Max:10386112,Thay_doi_pct:-1.33,Xu_huong:"Ổn định"},
+  {Brand:"ZOTAC",Chipset:"RTX 5060 Ti",VRAM:"16GB",Tuan_Gia_Hien_Tai:"29/12/2025",Gia_Hien_Tai:11890000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:12563771,Gia_Du_Bao_Min:10098759,Gia_Du_Bao_Max:15028783,Thay_doi_pct:5.67,Xu_huong:"Tăng"},
+  {Brand:"ZOTAC",Chipset:"RTX 5060 Ti",VRAM:"8GB",Tuan_Gia_Hien_Tai:"13/10/2025",Gia_Hien_Tai:9970000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:9773205,Gia_Du_Bao_Min:7855702,Gia_Du_Bao_Max:11690708,Thay_doi_pct:-1.97,Xu_huong:"Ổn định"},
+  {Brand:"ZOTAC",Chipset:"RTX 5070",VRAM:"12GB",Tuan_Gia_Hien_Tai:"22/12/2025",Gia_Hien_Tai:17013333,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:16709508,Gia_Du_Bao_Min:13431102,Gia_Du_Bao_Max:19987913,Thay_doi_pct:-1.79,Xu_huong:"Ổn định"},
+  {Brand:"ZOTAC",Chipset:"RTX 5070",VRAM:"16GB",Tuan_Gia_Hien_Tai:"29/12/2025",Gia_Hien_Tai:22900000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:22479974,Gia_Du_Bao_Min:18069403,Gia_Du_Bao_Max:26890544,Thay_doi_pct:-1.83,Xu_huong:"Ổn định"},
+  {Brand:"ZOTAC",Chipset:"RTX 5070 Ti",VRAM:"16GB",Tuan_Gia_Hien_Tai:"08/12/2025",Gia_Hien_Tai:22530000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:23812909,Gia_Du_Bao_Min:19140816,Gia_Du_Bao_Max:28485001,Thay_doi_pct:5.69,Xu_huong:"Tăng"},
+  {Brand:"ZOTAC",Chipset:"RTX 5080",VRAM:"16GB",Tuan_Gia_Hien_Tai:"22/12/2025",Gia_Hien_Tai:29090000,Tuan_Du_Bao:"05/01/2026",Gia_Du_Bao:24654008,Gia_Du_Bao_Min:19816892,Gia_Du_Bao_Max:29491124,Thay_doi_pct:-15.25,Xu_huong:"Giảm"}
+];
+
+const HISTORY = [{"date": "2025-03-24", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4100000.0}, {"date": "2025-03-31", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4284000.0}, {"date": "2025-04-07", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4400000.0}, {"date": "2025-04-14", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4380000.0}, {"date": "2025-04-21", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4385000.0}, {"date": "2025-04-28", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4400000.0}, {"date": "2025-05-05", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4412500.0}, {"date": "2025-05-12", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4416666.666666667}, {"date": "2025-05-19", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4437500.0}, {"date": "2025-05-26", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4425000.0}, {"date": "2025-06-02", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4400000.0}, {"date": "2025-06-09", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4400000.0}, {"date": "2025-06-23", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4440000.0}, {"date": "2025-06-30", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4437500.0}, {"date": "2025-07-14", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4337722.333333333}, {"date": "2025-07-21", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4450000.0}, {"date": "2025-07-28", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4446000.0}, {"date": "2025-08-04", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4352500.0}, {"date": "2025-08-11", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4410000.0}, {"date": "2025-08-18", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4332485.0}, {"date": "2025-08-25", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 2670000.0}, {"date": "2025-09-01", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4410000.0}, {"date": "2025-09-08", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4350000.0}, {"date": "2025-09-15", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4375000.0}, {"date": "2025-09-22", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4358333.333333333}, {"date": "2025-09-29", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4425000.0}, {"date": "2025-10-06", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4350000.0}, {"date": "2025-10-13", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4416666.666666667}, {"date": "2025-10-20", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4350000.0}, {"date": "2025-10-27", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4370000.0}, {"date": "2025-11-03", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4350000.0}, {"date": "2025-11-10", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4350000.0}, {"date": "2025-11-17", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4312500.0}, {"date": "2025-11-24", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4350000.0}, {"date": "2025-12-01", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4216666.666666667}, {"date": "2025-12-08", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4350000.0}, {"date": "2025-12-15", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4350000.0}, {"date": "2025-12-22", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4216666.666666667}, {"date": "2025-12-29", "Chipset": "RTX 3050", "VRAM": "6GB", "sales_price": 4350000.0}, {"date": "2025-01-06", "Chipset": "RTX 3050", "VRAM": "8GB", "sales_price": 4900000.0}, {"date": "2025-03-31", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7400000.0}, {"date": "2025-04-07", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7400000.0}, {"date": "2025-04-14", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7400000.0}, {"date": "2025-04-21", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7400000.0}, {"date": "2025-05-05", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7400000.0}, {"date": "2025-05-12", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7300000.0}, {"date": "2025-05-19", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 6766666.666666667}, {"date": "2025-05-26", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7356818.181818182}, {"date": "2025-06-02", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7150000.0}, {"date": "2025-06-09", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 3575000.0}, {"date": "2025-06-16", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7400000.0}, {"date": "2025-06-23", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7252000.0}, {"date": "2025-06-30", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7316666.666666667}, {"date": "2025-07-07", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7400000.0}, {"date": "2025-07-14", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7230072.285714285}, {"date": "2025-07-21", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7362500.0}, {"date": "2025-07-28", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-08-04", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-08-11", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-08-18", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-08-25", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-09-01", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-09-08", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-09-15", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7461111.111111111}, {"date": "2025-09-22", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-09-29", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 6266666.666666667}, {"date": "2025-10-06", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-10-13", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-10-20", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-10-27", "Chipset": "RTX 3060", "VRAM": "12GB", "sales_price": 7350000.0}, {"date": "2025-01-20", "Chipset": "RTX 4060", "VRAM": "8GB", "sales_price": 7350000.0}, {"date": "2025-02-17", "Chipset": "RTX 4060", "VRAM": "8GB", "sales_price": 7450000.0}, {"date": "2025-02-24", "Chipset": "RTX 4060", "VRAM": "8GB", "sales_price": 7320000.0}, {"date": "2025-03-03", "Chipset": "RTX 4060", "VRAM": "8GB", "sales_price": 4350000.0}, {"date": "2025-03-10", "Chipset": "RTX 4060", "VRAM": "8GB", "sales_price": 7450000.0}, {"date": "2025-03-31", "Chipset": "RTX 4060", "VRAM": "8GB", "sales_price": 8500000.0}, {"date": "2025-04-07", "Chipset": "RTX 4060", "VRAM": "8GB", "sales_price": 7780000.0}, {"date": "2025-04-14", "Chipset": "RTX 4060", "VRAM": "8GB", "sales_price": 7924000.0}, {"date": "2025-04-21", "Chipset": "RTX 4060", "VRAM": "8GB", "sales_price": 7600000.0}, {"date": "2025-01-06", "Chipset": "RTX 4060 Ti", "VRAM": "16GB", "sales_price": 11090000.0}, {"date": "2025-02-17", "Chipset": "RTX 4060 Ti", "VRAM": "16GB", "sales_price": 11000000.0}, {"date": "2025-02-24", "Chipset": "RTX 4060 Ti", "VRAM": "16GB", "sales_price": 11125000.0}, {"date": "2025-02-24", "Chipset": "RTX 4060 Ti", "VRAM": "8GB", "sales_price": 9859650.0}, {"date": "2025-02-03", "Chipset": "RTX 4070", "VRAM": "12GB", "sales_price": 15518181.818181818}, {"date": "2025-02-10", "Chipset": "RTX 4070", "VRAM": "12GB", "sales_price": 15100000.0}, {"date": "2025-02-17", "Chipset": "RTX 4070", "VRAM": "12GB", "sales_price": 15700000.0}, {"date": "2025-02-24", "Chipset": "RTX 4070", "VRAM": "12GB", "sales_price": 15433333.333333334}, {"date": "2025-01-13", "Chipset": "RTX 4070", "VRAM": "16GB", "sales_price": 21800000.0}, {"date": "2025-02-03", "Chipset": "RTX 4070", "VRAM": "16GB", "sales_price": 21500000.0}, {"date": "2025-02-17", "Chipset": "RTX 4070", "VRAM": "16GB", "sales_price": 21500000.0}, {"date": "2025-02-24", "Chipset": "RTX 4070", "VRAM": "16GB", "sales_price": 21342320.0}, {"date": "2025-09-29", "Chipset": "RTX 5050", "VRAM": "8GB", "sales_price": 7350000.0}, {"date": "2025-11-10", "Chipset": "RTX 5050", "VRAM": "8GB", "sales_price": 7350000.0}, {"date": "2025-12-01", "Chipset": "RTX 5050", "VRAM": "8GB", "sales_price": 7350000.0}, {"date": "2025-06-30", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8976900.0}, {"date": "2025-07-07", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8852500.0}, {"date": "2025-07-14", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 9490000.0}, {"date": "2025-07-21", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 9388000.0}, {"date": "2025-07-28", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 9085555.555555556}, {"date": "2025-08-04", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8285500.0}, {"date": "2025-08-11", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8592000.0}, {"date": "2025-08-18", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 4501000.0}, {"date": "2025-08-25", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8802636.363636363}, {"date": "2025-09-01", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8461333.333333334}, {"date": "2025-09-08", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 9260500.0}, {"date": "2025-09-15", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 9070000.0}, {"date": "2025-09-22", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8798500.0}, {"date": "2025-09-29", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8780800.0}, {"date": "2025-10-06", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8509500.0}, {"date": "2025-10-13", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8780333.333333334}, {"date": "2025-10-20", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 4796865.0}, {"date": "2025-10-27", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8300000.0}, {"date": "2025-11-03", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8733500.0}, {"date": "2025-11-10", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8711333.333333334}, {"date": "2025-11-17", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8817538.461538462}, {"date": "2025-11-24", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8796000.0}, {"date": "2025-12-01", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 11326666.666666666}, {"date": "2025-12-08", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 2687500.0}, {"date": "2025-12-15", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8927500.0}, {"date": "2025-12-22", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8440000.0}, {"date": "2025-12-29", "Chipset": "RTX 5060", "VRAM": "8GB", "sales_price": 8800000.0}, {"date": "2025-05-12", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13556888.888888888}, {"date": "2025-05-19", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13888800.0}, {"date": "2025-05-26", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13343846.153846154}, {"date": "2025-06-02", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13850000.0}, {"date": "2025-06-09", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 4658461.538461538}, {"date": "2025-06-16", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13815000.0}, {"date": "2025-06-23", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13388750.0}, {"date": "2025-06-30", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 12485000.0}, {"date": "2025-07-07", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13290000.0}, {"date": "2025-07-14", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13290000.0}, {"date": "2025-07-21", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13290000.0}, {"date": "2025-08-04", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 11800000.0}, {"date": "2025-08-11", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 12668571.42857143}, {"date": "2025-08-18", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13800000.0}, {"date": "2025-08-25", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 11890000.0}, {"date": "2025-09-08", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 12445000.0}, {"date": "2025-09-15", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 12420000.0}, {"date": "2025-09-22", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 12882857.142857144}, {"date": "2025-10-13", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 12517500.0}, {"date": "2025-10-20", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13000000.0}, {"date": "2025-10-27", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 12652857.142857144}, {"date": "2025-11-10", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13393333.333333334}, {"date": "2025-11-17", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13290000.0}, {"date": "2025-11-24", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 13622500.0}, {"date": "2025-12-01", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 12784000.0}, {"date": "2025-12-08", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 12350000.0}, {"date": "2025-12-15", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 12370000.0}, {"date": "2025-12-22", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 11805000.0}, {"date": "2025-12-29", "Chipset": "RTX 5060 Ti", "VRAM": "16GB", "sales_price": 11890000.0}, {"date": "2025-06-09", "Chipset": "RTX 5060 Ti", "VRAM": "8GB", "sales_price": -11390000.0}, {"date": "2025-10-13", "Chipset": "RTX 5060 Ti", "VRAM": "8GB", "sales_price": 9970000.0}, {"date": "2025-04-14", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 21300000.0}, {"date": "2025-04-21", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 21300000.0}, {"date": "2025-05-05", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 21300000.0}, {"date": "2025-05-12", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 18991000.0}, {"date": "2025-05-19", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 15550000.0}, {"date": "2025-05-26", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 17032500.0}, {"date": "2025-06-09", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 18293333.33333333}, {"date": "2025-06-23", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 15237000.0}, {"date": "2025-06-30", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 21450000.0}, {"date": "2025-07-21", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 15680000.0}, {"date": "2025-07-28", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 17940000.0}, {"date": "2025-08-04", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 16190000.0}, {"date": "2025-08-11", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 16826666.666666668}, {"date": "2025-08-18", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 8500000.0}, {"date": "2025-08-25", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 16190000.0}, {"date": "2025-09-08", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 17041666.666666668}, {"date": "2025-09-15", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 21390000.0}, {"date": "2025-09-22", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 20000000.0}, {"date": "2025-09-29", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 21000000.0}, {"date": "2025-10-06", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 16918000.0}, {"date": "2025-10-13", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 19797500.0}, {"date": "2025-10-20", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 16195000.0}, {"date": "2025-10-27", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 15893333.333333334}, {"date": "2025-11-03", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 18850000.0}, {"date": "2025-11-10", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 17131666.666666668}, {"date": "2025-11-17", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 16200000.0}, {"date": "2025-11-24", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 16285714.285714284}, {"date": "2025-12-01", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 16833333.333333332}, {"date": "2025-12-08", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 16850000.0}, {"date": "2025-12-15", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 17200000.0}, {"date": "2025-12-22", "Chipset": "RTX 5070", "VRAM": "12GB", "sales_price": 17013333.333333332}, {"date": "2025-05-19", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 26450000.0}, {"date": "2025-05-26", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 25860000.0}, {"date": "2025-06-02", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 25712500.0}, {"date": "2025-06-09", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 24096666.666666668}, {"date": "2025-06-23", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 26450000.0}, {"date": "2025-07-21", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 24642500.0}, {"date": "2025-07-28", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 4166000.0}, {"date": "2025-08-04", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 21265000.0}, {"date": "2025-08-11", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 24200000.0}, {"date": "2025-08-18", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 23000000.0}, {"date": "2025-08-25", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 24550000.0}, {"date": "2025-09-01", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 24450000.0}, {"date": "2025-09-08", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 24633333.33333333}, {"date": "2025-09-22", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 24000000.0}, {"date": "2025-09-29", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 22410000.0}, {"date": "2025-10-06", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 21800000.0}, {"date": "2025-10-13", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 23275000.0}, {"date": "2025-10-20", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 26450000.0}, {"date": "2025-10-27", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 21725000.0}, {"date": "2025-11-03", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 21835000.0}, {"date": "2025-11-10", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 23416666.666666668}, {"date": "2025-11-17", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 23030000.0}, {"date": "2025-11-24", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 22900000.0}, {"date": "2025-12-01", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 22190000.0}, {"date": "2025-12-08", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 21964285.714285716}, {"date": "2025-12-15", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 22500000.0}, {"date": "2025-12-22", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 21964000.0}, {"date": "2025-12-29", "Chipset": "RTX 5070", "VRAM": "16GB", "sales_price": 22900000.0}, {"date": "2025-03-24", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 27328571.42857143}, {"date": "2025-03-31", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 18600000.0}, {"date": "2025-04-14", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 25753970.0}, {"date": "2025-04-28", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 26900000.0}, {"date": "2025-05-12", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 25711000.0}, {"date": "2025-05-19", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 28900000.0}, {"date": "2025-06-23", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 26500000.0}, {"date": "2025-07-14", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 27966666.666666668}, {"date": "2025-07-21", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 26900000.0}, {"date": "2025-07-28", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 17700000.0}, {"date": "2025-08-04", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 28700000.0}, {"date": "2025-08-11", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 24500000.0}, {"date": "2025-08-18", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 26950000.0}, {"date": "2025-08-25", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 25500000.0}, {"date": "2025-09-08", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 24500000.0}, {"date": "2025-09-15", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 22695000.0}, {"date": "2025-10-06", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 27500000.0}, {"date": "2025-10-13", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 27000000.0}, {"date": "2025-10-20", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 24900000.0}, {"date": "2025-10-27", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 16980000.0}, {"date": "2025-11-10", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 26166666.666666668}, {"date": "2025-11-17", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 27500000.0}, {"date": "2025-11-24", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 25500000.0}, {"date": "2025-12-01", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 24335000.0}, {"date": "2025-12-08", "Chipset": "RTX 5070 Ti", "VRAM": "16GB", "sales_price": 22530000.0}, {"date": "2025-03-03", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 34055000.0}, {"date": "2025-03-10", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 36453333.333333336}, {"date": "2025-03-17", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 34801171.76470588}, {"date": "2025-03-24", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 34990000.0}, {"date": "2025-03-31", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 35492000.0}, {"date": "2025-04-07", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 32990000.0}, {"date": "2025-04-21", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 34419140.0}, {"date": "2025-05-12", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 33129700.0}, {"date": "2025-05-19", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 34490000.0}, {"date": "2025-06-09", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 30492000.0}, {"date": "2025-06-16", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 32990000.0}, {"date": "2025-06-23", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 32990000.0}, {"date": "2025-07-14", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 37690000.0}, {"date": "2025-07-21", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 33350000.0}, {"date": "2025-07-28", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 10170000.0}, {"date": "2025-08-11", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 30070000.0}, {"date": "2025-08-18", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 31500000.0}, {"date": "2025-10-20", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 29090000.0}, {"date": "2025-12-01", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 30495000.0}, {"date": "2025-12-08", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 31200000.0}, {"date": "2025-12-15", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 31245000.0}, {"date": "2025-12-22", "Chipset": "RTX 5080", "VRAM": "16GB", "sales_price": 29090000.0}];
+
+// ===== GLOBAL STATE =====
+let filteredData = [...PREDICTIONS];
+let sortCol = null;
+let sortDir = 'asc';
+let priceChart = null;
+
+// ===== FORMAT HELPERS =====
+function fmtVND(n) {
+  if (n == null) return '—';
+  return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' đ';
+}
+function fmtM(n) {
+  return (n / 1e6).toFixed(1) + 'M';
+}
+function trendIcon(t) {
+  if (!t) return '';
+  if (t.includes('Tăng')) return '<span class="text-secondary">📈 Tăng</span>';
+  if (t.includes('Giảm')) return '<span class="text-primary">📉 Giảm</span>';
+  return '<span class="text-slate-400">➡️ Ổn định</span>';
+}
+function pctColor(p) {
+  if (p > 2) return 'text-secondary';
+  if (p < -2) return 'text-primary';
+  return 'text-slate-400';
+}
+
+// ===== INIT FILTERS =====
+function initFilters() {
+  // Chipsets
+  const chipsets = [...new Set(PREDICTIONS.map(p => p.Chipset))].sort();
+  const cf = document.getElementById('chipset-filters');
+  cf.innerHTML = chipsets.map(c => `
+    <label class="flex items-center gap-3 text-slate-400 cursor-pointer hover:text-secondary transition-colors">
+      <input type="checkbox" checked class="chipset-cb rounded-none border-secondary bg-transparent text-secondary focus:ring-secondary" value="${c}" onchange="applyFilters()"/>
+      ${c}
+    </label>
+  `).join('');
+
+  // VRAMs
+  const vrams = [...new Set(PREDICTIONS.map(p => p.VRAM))].sort((a,b) => parseInt(a)-parseInt(b));
+  const vf = document.getElementById('vram-filters');
+  vf.innerHTML = '<button class="vram-btn active border border-outline-variant py-2 text-slate-500 hover:border-secondary hover:text-secondary transition-all" data-vram="all" onclick="toggleVRAM(this)">TẤT CẢ</button>' +
+    vrams.map(v => `<button class="vram-btn border border-outline-variant py-2 text-slate-500 hover:border-secondary hover:text-secondary transition-all" data-vram="${v}" onclick="toggleVRAM(this)">${v}</button>`).join('');
+
+}
+
+// ===== VRAM TOGGLE =====
+function toggleVRAM(btn) {
+  document.querySelectorAll('.vram-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+
+// ===== PRICE SLIDERS =====
+function updatePriceLabels() {
+  let minVal = parseInt(document.getElementById('price-min').value);
+  let maxVal = parseInt(document.getElementById('price-max').value);
+  // Ensure min doesn't cross max visually
+  if (minVal > maxVal) {
+    document.getElementById('price-min').value = maxVal;
+    minVal = maxVal;
+  }
+  document.getElementById('lbl-min').textContent = minVal;
+  document.getElementById('lbl-max').textContent = maxVal;
+}
+
+// ===== APPLY ALL FILTERS =====
+function applyFilters() {
+  // Get selected chipsets
+  const selectedChipsets = [...document.querySelectorAll('.chipset-cb:checked')].map(cb => cb.value);
+
+  // Get selected VRAM
+  const activeVRAM = document.querySelector('.vram-btn.active')?.dataset.vram || 'all';
+
+  // Get trend
+  const trend = document.getElementById('trend-filter').value;
+
+  // Get price range (in millions)
+  const pMin = (parseFloat(document.getElementById('price-min').value) || 0) * 1e6;
+  const pMax = (parseFloat(document.getElementById('price-max').value) || 999) * 1e6;
+
+  filteredData = PREDICTIONS.filter(p => {
+    if (!selectedChipsets.includes(p.Chipset)) return false;
+    if (activeVRAM !== 'all' && p.VRAM !== activeVRAM) return false;
+    if (trend !== 'all' && !p.Xu_huong.includes(trend)) return false;
+    if (p.Gia_Du_Bao < pMin || p.Gia_Du_Bao > pMax) return false;
+    return true;
+  });
+
+  renderTable();
+  updateKPIs();
+  updateTrendSummary();
+  updateChart();
+}
+
+// ===== RENDER TABLE =====
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  if (filteredData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" class="py-8 text-center text-slate-500">Không tìm thấy sản phẩm nào phù hợp bộ lọc.</td></tr>';
+    document.getElementById('table-count').textContent = '0 sản phẩm';
+    return;
+  }
+
+  tbody.innerHTML = filteredData.map((p, i) => {
+    const changeCls = pctColor(p.Thay_doi_pct);
+    return `
+    <tr class="border-b border-outline-variant/30 hover:bg-surface-container-high/50 transition-colors fade-row tt-wrap">
+      <td class="py-4 px-2 text-slate-500">${i + 1}</td>
+      <td class="py-4 px-2 font-bold text-secondary">${p.Chipset}</td>
+      <td class="py-4 px-2">${p.VRAM}</td>
+      <td class="py-4 px-2 text-slate-500">${p.Tuan_Gia_Hien_Tai}</td>
+      <td class="py-4 px-2 text-right font-mono">${fmtVND(p.Gia_Hien_Tai)}</td>
+      <td class="py-4 px-2 text-right text-slate-500">${p.Tuan_Du_Bao}</td>
+      <td class="py-4 px-2 text-right font-mono font-bold">${fmtVND(p.Gia_Du_Bao)}</td>
+      <td class="py-4 px-2 text-right text-[10px] text-slate-500">${fmtVND(p.Gia_Du_Bao_Min)} ~ ${fmtVND(p.Gia_Du_Bao_Max)}</td>
+      <td class="py-4 px-2 text-right font-bold ${changeCls}">${p.Thay_doi_pct > 0 ? '+' : ''}${p.Thay_doi_pct.toFixed(1)}%</td>
+      <td class="py-4 px-2">${trendIcon(p.Xu_huong)}</td>
+      <div class="tt-box font-body normal-case tracking-normal">
+        <div class="text-secondary font-bold text-xs mb-2">${p.Chipset} ${p.VRAM}</div>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px]">
+          <span class="text-slate-500">Brand:</span><span>${p.Brand}</span>
+          <span class="text-slate-500">Tuần gần nhất:</span><span>${p.Tuan_Gia_Hien_Tai}</span>
+          <span class="text-slate-500">Giá hiện tại:</span><span class="font-mono">${fmtVND(p.Gia_Hien_Tai)}</span>
+          <span class="text-slate-500">Tuần dự báo:</span><span class="text-primary">${p.Tuan_Du_Bao}</span>
+          <span class="text-slate-500">Giá dự báo:</span><span class="font-mono font-bold">${fmtVND(p.Gia_Du_Bao)}</span>
+          <span class="text-slate-500">Khoảng Min:</span><span class="font-mono">${fmtVND(p.Gia_Du_Bao_Min)}</span>
+          <span class="text-slate-500">Khoảng Max:</span><span class="font-mono">${fmtVND(p.Gia_Du_Bao_Max)}</span>
+          <span class="text-slate-500">Thay đổi:</span><span class="font-bold ${changeCls}">${p.Thay_doi_pct > 0 ? '+' : ''}${p.Thay_doi_pct.toFixed(2)}%</span>
+          <span class="text-slate-500">Độ chính xác:</span><span>±19.6% MAPE</span>
+        </div>
+      </div>
+    </tr>`;
+  }).join('');
+  document.getElementById('table-count').textContent = filteredData.length + ' sản phẩm';
+}
+
+// ===== SORT TABLE =====
+function sortTable(col) {
+  if (sortCol === col) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortCol = col;
+    sortDir = 'asc';
+  }
+  // Update header classes
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.classList.remove('asc', 'desc');
+    if (th.dataset.col === col) th.classList.add(sortDir);
+  });
+
+  filteredData.sort((a, b) => {
+    let va = a[col], vb = b[col];
+    if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  renderTable();
+}
+
+// ===== UPDATE KPIs =====
+function updateKPIs() {
+  document.getElementById('kpi-total').textContent = filteredData.length;
+  const avg = filteredData.length > 0 ? filteredData.reduce((s, p) => s + p.Gia_Du_Bao, 0) / filteredData.length : 0;
+  document.getElementById('kpi-avg-price').textContent = fmtM(avg) + 'đ';
+  const up = filteredData.filter(p => p.Xu_huong.includes('Tăng')).length;
+  const down = filteredData.filter(p => p.Xu_huong.includes('Giảm')).length;
+  document.getElementById('kpi-up').textContent = up;
+  document.getElementById('kpi-down').textContent = down;
+}
+
+// ===== UPDATE TREND SUMMARY =====
+function updateTrendSummary() {
+  const upItems = filteredData.filter(p => p.Xu_huong.includes('Tăng'));
+  const downItems = filteredData.filter(p => p.Xu_huong.includes('Giảm'));
+  const stableItems = filteredData.filter(p => p.Xu_huong.includes('Ổn định'));
+
+  document.getElementById('trend-up-count').textContent = upItems.length;
+  document.getElementById('trend-down-count').textContent = downItems.length;
+  document.getElementById('trend-stable-count').textContent = stableItems.length;
+
+  document.getElementById('trend-list-all').innerHTML = upItems.map(p =>
+    `<div class='flex justify-between items-center'><span>${p.Chipset} ${p.VRAM}</span><span class='text-secondary'>+${p.Thay_doi_pct.toFixed(1)}%</span></div>`
+  ).join('');
+  document.getElementById('trend-list-all').innerHTML += downItems.map(p =>
+    `<div class='flex justify-between items-center text-slate-500'><span>${p.Chipset} ${p.VRAM}</span><span class='text-primary'>${p.Thay_doi_pct.toFixed(1)}%</span></div>`
+  ).join('');
+  document.getElementById('trend-list-all').innerHTML += stableItems.map(p =>
+    `<div class='flex justify-between items-center text-slate-600'><span>${p.Chipset} ${p.VRAM}</span><span>${p.Thay_doi_pct > 0 ? '+' : ''}${p.Thay_doi_pct.toFixed(1)}%</span></div>`
+  ).join('');
+
+  // Trend bar
+  const total = filteredData.length || 1;
+  const bar = document.getElementById('trend-bar');
+  bar.innerHTML = `
+    <div class="bg-secondary/60 h-full transition-all" style="width:${upItems.length/total*100}%"></div>
+    <div class="bg-primary/60 h-full transition-all" style="width:${downItems.length/total*100}%"></div>
+    <div class="bg-slate-600/40 h-full transition-all" style="width:${stableItems.length/total*100}%"></div>
+  `;
+}
+
+// ===== CHART =====
+function updateChart() {
+  // Filter HISTORY for all ACTIVE chipsets and VRAMs in the filteredData
+  const histData = (typeof HISTORY !== 'undefined' && HISTORY.length > 0)
+    ? HISTORY.filter(h => filteredData.some(p => p.Chipset === h.Chipset && p.VRAM === h.VRAM))
+    : [];
+
+  // Group by Chipset + VRAM
+  const uniqueSKUs = [...new Set(histData.map(h => `${h.Chipset} ${h.VRAM}`))].sort();
+  // Expanded neon aesthetics color palette for more datasets
+  const colors = ['#00ffcc', '#ff2d78', '#ffe04a', '#8b5cf6', '#ff8c00', '#00bfff', '#ff00ff', '#aaff00', '#ff6666'];
+
+  const datasets = uniqueSKUs.map((sku, i) => {
+    const series = histData.filter(h => `${h.Chipset} ${h.VRAM}` === sku).sort((a,b) => a.date.localeCompare(b.date));
+    // Add forecast point based on filteredData array matches
+    const pred = filteredData.find(p => `${p.Chipset} ${p.VRAM}` === sku);
+    const labels = series.map(s => s.date);
+    const prices = series.map(s => s.sales_price);
+    if (pred) {
+      labels.push('2026-01-05');
+      prices.push(pred.Gia_Du_Bao);
+    }
+    return {
+      label: sku,
+      data: prices,
+      borderColor: colors[i % colors.length],
+      backgroundColor: colors[i % colors.length] + '20',
+      borderWidth: 2,
+      pointRadius: 2,
+      pointHoverRadius: 6,
+      pointHoverBackgroundColor: colors[i % colors.length],
+      tension: 0.3,
+      fill: false,
+      _labels: labels
+    };
+  });
+
+  // Use longest label set
+  const allLabels = datasets.length > 0 ? datasets.reduce((a, d) => d._labels.length > a.length ? d._labels : a, []) : [];
+
+  if (priceChart) priceChart.destroy();
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  priceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: allLabels,
+      datasets: datasets.map(d => ({ ...d, data: d.data }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#a098b0', font: { family: 'Space Grotesk', size: 10 } } },
+        tooltip: {
+          backgroundColor: '#141422',
+          borderColor: '#00ffcc66',
+          borderWidth: 1,
+          titleFont: { family: 'Sora', size: 12, weight: 'bold' },
+          bodyFont: { family: 'Inter', size: 11 },
+          titleColor: '#00ffcc',
+          bodyColor: '#e8e0f0',
+          padding: 12,
+          callbacks: {
+            label: function(ctx) {
+              return ctx.dataset.label + ': ' + fmtVND(ctx.raw);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#5a5068', font: { family: 'Space Grotesk', size: 9 }, maxTicksLimit: 12 },
+          grid: { color: '#302840' }
+        },
+        y: {
+          beginAtZero: false,
+          ticks: {
+            color: '#5a5068',
+            font: { family: 'Space Grotesk', size: 9 },
+            callback: v => (v/1e6).toFixed(1) + 'M'
+          },
+          grid: { color: '#30284033' }
+        }
+      }
+    }
+  });
+}
+
+// ===== RESET FILTERS =====
+function resetFilters() {
+  document.querySelectorAll('.chipset-cb').forEach(cb => cb.checked = true);
+  document.querySelectorAll('.vram-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.vram-btn[data-vram="all"]').classList.add('active');
+  document.getElementById('trend-filter').value = 'all';
+  document.getElementById('price-min').value = '0';
+  document.getElementById('price-max').value = '50';
+  updatePriceLabels();
+  sortCol = null;
+  sortDir = 'asc';
+  document.querySelectorAll('th.sortable').forEach(th => th.classList.remove('asc', 'desc'));
+  applyFilters();
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  initFilters();
+  applyFilters();
+  updateChart();
+});
+</script>
+
+</html>
